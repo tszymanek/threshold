@@ -4,6 +4,7 @@
 //Zadanie 1 (Obróbka grafiki: filtr Threshold)
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 void malloc_macierz(int **M, int w, int h){
 	*M=malloc((w * h) * sizeof(int));
@@ -67,19 +68,26 @@ void zapisz_do_pliku(char *nazwa_pliku, int *M, int w, int h){
 		}
 	}
 }
-int main(int argc, char *argv[]){
+
+int main(int argc, char **argv){
+	struct timespec t1, t2;
 	int *M, *m;				//macierz, podmacierz
-	int w=320, h=240;		//szerokosc, wysokosc
-	int THRESH=123;
+	const int w=640, h=480;	//szerokosc, wysokosc
+	int THRESH;
+	scanf("%d", &THRESH);
+	clock_gettime(CLOCK_REALTIME, &t1);
 	int liczba_procesow=4;	//, numer_procesu;
 	malloc_macierz(&M, w, h);
 	malloc_podmacierz(&m, w, h, liczba_procesow);
 	generuj_macierz(M, w, h);
-	zapisz_do_pliku("monochrome.ppm", M, w, h);
+	zapisz_do_pliku("monochrome_s.ppm", M, w, h);
 	//wypisz_macierz(M, w, h);
 	//printf("\n");
 	thresh_macierz(M, m, w, h, liczba_procesow, THRESH);
-	zapisz_do_pliku("thresh.ppm", M, w, h);
+	zapisz_do_pliku("thresh_s.ppm", M, w, h);
 	//wypisz_macierz(M, w, h);
+	clock_gettime(CLOCK_REALTIME, &t2);
+	long nansec = t2.tv_nsec - t1.tv_nsec; 
+	printf("Czas wykonywania programu wyniosl:\t%ld nanosekund", nansec);
 	return 0;
 }
