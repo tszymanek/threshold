@@ -41,7 +41,7 @@ void dziel_i_rozsylaj_macierz(int *M, int *m, int w, int h, int l_procesow){
 		printf("Macierz nie jest proporcjonalnie podzielna.");
 }
 
-void thresh_podmacierz(int *m, int *M, int w, int h, int l_procesow, int THRESH){
+void thresh_i_wysylaj_podmacierz(int *m, int *M, int w, int h, int l_procesow, int THRESH){
 	int i;
 	if(((w*h) % l_procesow)==0){
 		int lpnp=(int)((w*h)/l_procesow); //liczba_pikseli_na_proces
@@ -51,6 +51,7 @@ void thresh_podmacierz(int *m, int *M, int w, int h, int l_procesow, int THRESH)
 				else
 					m[i]=0;
 			}
+		MPI_Gather(m, lpnp, MPI_INT, M, lpnp, MPI_INT, 0, MPI_COMM_WORLD);
 	}
 	else
 		printf("Macierz nie jest proporcjonalnie podzielna.");
@@ -80,9 +81,8 @@ int main(int argc, char **argv){
 	MPI_Comm_size(MPI_COMM_WORLD, &liczba_procesow);
 	
 	int *M, *m;				//macierz, podmacierz
-	const int w=320, h=240;	//szerokosc, wysokosc
+	const int w=640, h=480;	//szerokosc, wysokosc
 	int THRESH;
-	int lpnp=(int)((w*h)/liczba_procesow); //liczba_pikseli_na_proces
 
 	if(numer_procesu==0){
 		clock_gettime(CLOCK_REALTIME, &t1);
@@ -90,7 +90,7 @@ int main(int argc, char **argv){
 		generuj_macierz(M, w, h);
 		//wypisz_macierz(M, w, h);
 		//printf("\n");
-		zapisz_do_pliku("monochrome_s.ppm", M, w, h);
+		zapisz_do_pliku("monochrome_p.ppm", M, w, h);
 	}
 	
 	malloc_podmacierz(&m, w, h, liczba_procesow);
@@ -101,16 +101,15 @@ int main(int argc, char **argv){
 		THRESH=100;
 	}
 	
-	MPI_Scatter(&THRESH, 1, MPI_INT, &THRESH, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	thresh_podmacierz(m, M, w, h, liczba_procesow, THRESH);
-	MPI_Gather(m, lpnp, MPI_INT, M, lpnp, MPI_INT, 0, MPI_COMM_WORLD);
+	MPI_Bcast(&THRESH, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	thresh_i_wysylaj_podmacierz(m, M, w, h, liczba_procesow, THRESH);
 	
 	if(numer_procesu==0){
-		zapisz_do_pliku("thresh_s.ppm", M, w, h);
 		//wypisz_macierz(M, w, h);
+		zapisz_do_pliku("threshold_p.ppm", M, w, h);
 		clock_gettime(CLOCK_REALTIME, &t2);
 		long nansec = t2.tv_nsec - t1.tv_nsec; 
-		printf("Czas wykonywania programu wyniosl:\t%ld nanosekund", nansec);
+		printf("Czas wykonywania programu wyniosl:\t%ld nanosekund\n", nansec);
 	}
 	MPI_Finalize();
 	return 0;

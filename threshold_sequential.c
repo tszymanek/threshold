@@ -73,8 +73,8 @@ int main(int argc, char **argv){
 	struct timespec t1, t2;
 	int *M, *m;				//macierz, podmacierz
 	const int w=640, h=480;	//szerokosc, wysokosc
-	int THRESH;
-	scanf("%d", &THRESH);
+	int THRESH=100;
+	//scanf("%d", &THRESH);
 	clock_gettime(CLOCK_REALTIME, &t1);
 	int liczba_procesow=4;	//, numer_procesu;
 	malloc_macierz(&M, w, h);
@@ -84,10 +84,10 @@ int main(int argc, char **argv){
 	//wypisz_macierz(M, w, h);
 	//printf("\n");
 	thresh_macierz(M, m, w, h, liczba_procesow, THRESH);
-	zapisz_do_pliku("thresh_s.ppm", M, w, h);
+	zapisz_do_pliku("threshold_s.ppm", M, w, h);
 	//wypisz_macierz(M, w, h);
 	clock_gettime(CLOCK_REALTIME, &t2);
 	long nansec = t2.tv_nsec - t1.tv_nsec; 
-	printf("Czas wykonywania programu wyniosl:\t%ld nanosekund", nansec);
+	printf("Czas wykonywania programu wyniosl:\t%ld nanosekund\n", nansec);
 	return 0;
 }
