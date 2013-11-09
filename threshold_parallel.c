@@ -41,7 +41,7 @@ void dziel_i_rozsylaj_macierz(int *M, int *m, int w, int h, int l_procesow){
 		printf("Macierz nie jest proporcjonalnie podzielna.");
 }
 
-void thresh_i_wysylaj_podmacierz(int *m, int *M, int w, int h, int l_procesow, int THRESH){
+void thresh_podmacierz(int *m, int *M, int w, int h, int l_procesow, int THRESH){
 	int i;
 	if(((w*h) % l_procesow)==0){
 		int lpnp=(int)((w*h)/l_procesow); //liczba_pikseli_na_proces
@@ -51,7 +51,6 @@ void thresh_i_wysylaj_podmacierz(int *m, int *M, int w, int h, int l_procesow, i
 				else
 					m[i]=0;
 			}
-		MPI_Gather(m, lpnp, MPI_INT, M, lpnp, MPI_INT, 0, MPI_COMM_WORLD);
 	}
 	else
 		printf("Macierz nie jest proporcjonalnie podzielna.");
@@ -73,18 +72,19 @@ void zapisz_do_pliku(char *nazwa_pliku, int *M, int w, int h){
 }
 
 int main(int argc, char **argv){
+	struct timespec t1, t2;
 	int liczba_procesow, numer_procesu;
 	
 	MPI_Init(&argc, &argv);
 	MPI_Comm_rank(MPI_COMM_WORLD, &numer_procesu);
-	MPI_Comm_size(MPI_COMM_WORLD, &l_procesow);
+	MPI_Comm_size(MPI_COMM_WORLD, &liczba_procesow);
 	
 	int *M, *m;				//macierz, podmacierz
-	const int w=640, h=480;	//szerokosc, wysokosc
+	const int w=320, h=240;	//szerokosc, wysokosc
 	int THRESH;
+	int lpnp=(int)((w*h)/liczba_procesow); //liczba_pikseli_na_proces
 
 	if(numer_procesu==0){
-		struct timespec t1, t2;
 		clock_gettime(CLOCK_REALTIME, &t1);
 		malloc_macierz(&M, w, h);
 		generuj_macierz(M, w, h);
@@ -97,11 +97,13 @@ int main(int argc, char **argv){
 	dziel_i_rozsylaj_macierz(M, m, w, h, liczba_procesow);
 
 	if(numer_procesu==0){
-		scanf("%d", &THRESH);
+		//scanf("%d", &THRESH);
+		THRESH=100;
 	}
 	
-	MPI_Scatter(THRESH, 1, MPI_INT, THRESH, 1, MPI_INT, 0, MPI_COMM_WORLD);
-	thresh_i_wysylaj_podmacierz(m, M, w, h, liczba_procesow, THRESH);
+	MPI_Scatter(&THRESH, 1, MPI_INT, &THRESH, 1, MPI_INT, 0, MPI_COMM_WORLD);
+	thresh_podmacierz(m, M, w, h, liczba_procesow, THRESH);
+	MPI_Gather(m, lpnp, MPI_INT, M, lpnp, MPI_INT, 0, MPI_COMM_WORLD);
 	
 	if(numer_procesu==0){
 		zapisz_do_pliku("thresh_s.ppm", M, w, h);
@@ -110,5 +112,6 @@ int main(int argc, char **argv){
 		long nansec = t2.tv_nsec - t1.tv_nsec; 
 		printf("Czas wykonywania programu wyniosl:\t%ld nanosekund", nansec);
 	}
+	MPI_Finalize();
 	return 0;
 }
